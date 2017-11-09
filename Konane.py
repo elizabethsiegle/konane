@@ -11,7 +11,6 @@ from copy import deepcopy
 """
 CREATES THE NODE CLASS (to be used to represent various game states)
 """
-
 class Node:
     def __init__(self, board, move, level, depth_limit, player, who_first):
         "Instance variables."
@@ -22,14 +21,14 @@ class Node:
         self.player = player                 # which player goes next
         self.who_first = who_first           # who goes first in the game
 
-
-
 """
 BOARD CLASS and FOR BOARD/GAME FUNCTIONALITY
 """
 class BOARD:
-    def __init__(self, width):
+    def __init__(self, width, counter, num_successors):
+        self.counter = 0
         self.width = width
+        self.num_successors = 0
         self.board = [[' ']*(self.width + 1) for row in range(self.width + 1)]
 
 
@@ -210,16 +209,15 @@ class BOARD:
         # if the user goes first...
         if (user_turn):
             # give instructions
-            print "For the first move, only " + str(first_moves[0]) + ", " + str(first_moves[1]) + ", " + str(first_moves[2]) + ", or " + str(first_moves[3]) + " allowed."
+            # print "For the first move, only " + str(first_moves[0]) + ", " + str(first_moves[1]) + ", " + str(first_moves[2]) + ", or " + str(first_moves[3]) + " allowed."
+            # # ask for user input
+            # coord = input("Enter your move, in the form (x, y): ")
 
-            # ask for user input
-            coord = input("Enter your move, in the form (x, y): ")
-
+            coord = random.choice(first_moves)
             # make sure that input is valid
             while (coord not in first_moves):
                 print "Error -- invalid move. Please try again."
                 coord = input("Enter your move, in the form (x, y): ")
-
             # remove this piece from the board
             print "User removes " + str(coord)
             self.board[coord[0]][coord[1]] = ' '
@@ -251,7 +249,8 @@ class BOARD:
             print "For the second move, can only remove a piece ajacent to first move."
 
             # ask for user input
-            coord2 = input("Enter your move, in the form (x, y): ")
+            # coord2 = input("Enter your move, in the form (x, y): ")
+            coord2 = random.choice(second_moves)
 
             # make sure that input is valid
             while (coord2 not in second_moves):
@@ -275,15 +274,30 @@ class BOARD:
     def get_move(self, user_turn, possible_moves, who_first):
         # if it's the user's move...
         if (user_turn):
-            # ask for user input -- needs TWO coordinates
-            coordinates = input("Enter your move, in the form (x, y, x2, y2): ")
+            "RandomPlayer: chooses a random move out of possible legal moves."
+            #best_move = random.choice(possible_moves)
 
-            # make sure that input is valid
-            while (coordinates not in possible_moves):
-                print "Error -- invalid move. Please try again."
-                coordinates = input("Enter your move, in the form (x, y, x2, y2): ")
+            "SmartPlayer: chooses the best move using minimax and alphabeta pruning."
+            if who_first == 'User':
+                first_node = Node(self.board, None, 0, 6, 'X', who_first)          # 4 is the depth limit
+            else:
+                first_node = Node(self.board, None, 0, 6, 'O', who_first)
 
-            return coordinates
+            #bv_move = self.minimax_alpha_beta(first_node, float('-inf'), float('inf'))
+            bv_move = self.minimax(first_node)
+            best_move = bv_move[1]
+
+            return best_move
+            # # ask for user input -- needs TWO coordinates
+            # # coordinates = input("Enter your move, in the form (x, y, x2, y2): ")
+            # coordinates = random.choice(possible_moves)
+
+            # # make sure that input is valid
+            # while (coordinates not in possible_moves):
+            #     print "Error -- invalid move. Please try again."
+            #     coordinates = input("Enter your move, in the form (x, y, x2, y2): ")
+
+            # return coordinates
 
 
         # if it's the computer's move...
@@ -293,12 +307,12 @@ class BOARD:
 
             "SmartPlayer: chooses the best move using minimax and alphabeta pruning."
             if who_first == 'User':
-                first_node = Node(self.board, None, 0, 4, 'O', who_first)          # 4 is the depth limit
+                first_node = Node(self.board, None, 0, 6, 'O', who_first)          # 4 is the depth limit
             else:
-                first_node = Node(self.board, None, 0, 4, 'X', who_first)
+                first_node = Node(self.board, None, 0, 6, 'X', who_first)
 
             #bv_move = self.minimax_alpha_beta(first_node, float('-inf'), float('inf'))
-            bv_move = self.minimax_alpha_beta_multijump(first_node, float('-inf'), float('inf'))
+            bv_move = self.minimax(first_node)
             best_move = bv_move[1]
 
             return best_move
@@ -440,6 +454,11 @@ class BOARD:
 
         # generate successor nodes
         successor_nodes = self.generate_successor_nodes(node.board, node)
+        print "successor_nodes len = ", len(successor_nodes)
+        self.num_successors += len(successor_nodes)
+
+        self.counter +=1 
+
 
         # if node is at a maximizing level (if level is even)
         if (node.level % 2 == 0):
@@ -483,6 +502,10 @@ class BOARD:
 
         # generate successor nodes
         successor_nodes = self.generate_successor_nodes(node.board, node)
+        print "successor_nodes len = ", len(successor_nodes)
+        self.num_successors += len(successor_nodes)
+
+        self.counter +=1 
 
         # if node is at a maximizing level (if level is even)
         if (node.level % 2 == 0):
@@ -509,6 +532,7 @@ class BOARD:
                 bv_move = self.minimax_alpha_beta(successor, A, B)
                 if bv_move[0] < B:
                     B = bv_move[0]
+                    best_move = successor.move
                 if B <= A:
                     return (A, best_move)
 
@@ -564,6 +588,7 @@ class BOARD:
                 bv_move = self.minimax_alpha_beta(successor, A, B)
                 if bv_move[0] < B:
                     B = bv_move[0]
+                    best_move = successor.move 
                 if B <= A:
                     return (A, best_move)
 
@@ -576,7 +601,7 @@ PLAY THE GAME
 
 def play_game(width):
     "Initialize the board game."
-    board = BOARD(width)
+    board = BOARD(width, 0, 0)
     board.create_board(width)
 
     winner = None                # identifies the winner
@@ -586,8 +611,9 @@ def play_game(width):
 
 
     "Decide who goes first."
-    who_first = raw_input("Who goes first? (Enter 'User' or 'Computer'): ")
+    # who_first = raw_input("Who goes first? (Enter 'User' or 'Computer'): ")
 
+    who_first = "Computer"
     if (who_first == 'User'):
         print "User goes first (User is 'X', Computer is 'O')."
         user_piece = 'X'
@@ -632,28 +658,31 @@ def play_game(width):
             board.make_move(user_move, user_piece, True)
             user_turn = False
 
-        # if it's the computer's turn...
-        else:
-            # generate all possible moves for the user
-            possible_moves = board.generate_moves(board.board, computer_piece)
+        # # if it's the computer's turn...
+        # generate all possible moves for the user
+        possible_moves = board.generate_moves(board.board, computer_piece)
 
-            # check if there's a winner (if no moves generates, opponent wins)
-            if (possible_moves == []):
-                winner = 'User'
-                break
+        # check if there's a winner (if no moves generates, opponent wins)
+        if (possible_moves == []):
+            winner = 'User'
+            break
 
-            # get the move from the computer
-            print "Computer's turn."
-            computer_move = board.get_move(user_turn, possible_moves, who_first)
+        # get the move from the computer
+        print "Computer's turn."
+        computer_move = board.get_move(user_turn, possible_moves, who_first)
 
-            # make move on the board
-            board.make_move(computer_move, computer_piece, True)
-            user_turn = True
+        # make move on the board
+        board.make_move(computer_move, computer_piece, True)
+        user_turn = True
 
 
     "Congratulate the winner and end the game."
     print winner + " won! Game over."
+    print "num nodes ", board.num_successors
+    print "counter ", board.counter
+    avg = float(board.num_successors/board.counter)
+    print "avg branching factor ", avg
 
 
 "Call the play_game() function."
-play_game(8)
+play_game(6)
