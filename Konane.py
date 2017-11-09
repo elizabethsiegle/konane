@@ -25,10 +25,11 @@ class Node:
 BOARD CLASS and FOR BOARD/GAME FUNCTIONALITY
 """
 class BOARD:
-    def __init__(self, width, counter, num_successors):
+    def __init__(self, width, counter, num_successors, eval_counter):
         self.counter = 0
         self.width = width
         self.num_successors = 0
+        self.eval_counter = 0
         self.board = [[' ']*(self.width + 1) for row in range(self.width + 1)]
 
 
@@ -275,17 +276,17 @@ class BOARD:
         # if it's the user's move...
         if (user_turn):
             "RandomPlayer: chooses a random move out of possible legal moves."
-            #best_move = random.choice(possible_moves)
+            best_move = random.choice(possible_moves)
 
             "SmartPlayer: chooses the best move using minimax and alphabeta pruning."
-            if who_first == 'User':
-                first_node = Node(self.board, None, 0, 6, 'X', who_first)          # 4 is the depth limit
-            else:
-                first_node = Node(self.board, None, 0, 6, 'O', who_first)
+            # if who_first == 'User':
+            #     first_node = Node(self.board, None, 0, 1, 'X', who_first)          # 4 is the depth limit
+            # else:
+            #     first_node = Node(self.board, None, 0, 1, 'O', who_first)
 
-            #bv_move = self.minimax_alpha_beta(first_node, float('-inf'), float('inf'))
-            bv_move = self.minimax(first_node)
-            best_move = bv_move[1]
+            # #bv_move = self.minimax_alpha_beta(first_node, float('-inf'), float('inf'))
+            # bv_move = self.minimax(first_node)
+            # best_move = bv_move[1]
 
             return best_move
             # # ask for user input -- needs TWO coordinates
@@ -307,9 +308,9 @@ class BOARD:
 
             "SmartPlayer: chooses the best move using minimax and alphabeta pruning."
             if who_first == 'User':
-                first_node = Node(self.board, None, 0, 6, 'O', who_first)          # 4 is the depth limit
+                first_node = Node(self.board, None, 0, 5, 'O', who_first)          # 4 is the depth limit
             else:
-                first_node = Node(self.board, None, 0, 6, 'X', who_first)
+                first_node = Node(self.board, None, 0, 5, 'X', who_first)
 
             #bv_move = self.minimax_alpha_beta(first_node, float('-inf'), float('inf'))
             bv_move = self.minimax(first_node)
@@ -450,6 +451,7 @@ class BOARD:
         # if node is at depth limit...
         if (node.level == node.depth_limit):
             # do a static evaluation, return result and the best move
+            self.eval_counter +=1
             return (self.static_eval(node), node.move)
 
         # generate successor nodes
@@ -601,7 +603,7 @@ PLAY THE GAME
 
 def play_game(width):
     "Initialize the board game."
-    board = BOARD(width, 0, 0)
+    board = BOARD(width, 0, 0, 0)
     board.create_board(width)
 
     winner = None                # identifies the winner
@@ -678,11 +680,13 @@ def play_game(width):
 
     "Congratulate the winner and end the game."
     print winner + " won! Game over."
-    print "num nodes ", board.num_successors
-    print "counter ", board.counter
     avg = float(board.num_successors/board.counter)
     print "avg branching factor ", avg
+    print "num nodes ", board.num_successors+1
+    # print "counter ", board.counter 
+   
+    print "eval count ", board.eval_counter
 
 
 "Call the play_game() function."
-play_game(6)
+play_game(8)
